@@ -79,6 +79,8 @@
 
 `evals/fixtures/orders-service`는 알려진 버그 9개를 넣어 둔 작은 주문 서비스입니다. `evals/evals.json`에 테스트 프롬프트와 정답이 있습니다. 스킬을 고친 뒤에도 찾아야 할 문제를 여전히 찾는지 확인할 때 씁니다.
 
+`evals/trigger/`는 Claude가 언제 이 스킬을 부르는지 확인합니다. 불러야 하는 요청 10개와 비슷하지만 부르면 안 되는 요청 10개를, 설치된 스킬에 읽기 전용 도구만 허용해서 돌립니다(`python3 evals/trigger/trigger_check.py evals/trigger/queries.json <샘플 저장소> out.json 3`). 지금 description은 매번 20/20입니다.
+
 ## 라이선스
 
 [MIT](LICENSE)

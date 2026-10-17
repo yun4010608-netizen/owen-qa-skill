@@ -68,6 +68,8 @@ Installed as a plugin, the command is `/ops-qa:qa`. Claude also uses the skill w
 
 `evals/fixtures/orders-service` is a small order service with nine known bugs, and `evals/evals.json` holds the prompts and the answer key. Use them to check that a change to the skill still finds what it should.
 
+`evals/trigger/` checks when Claude loads the skill: 10 requests that should trigger it and 10 near-misses that should not, run against the installed skill with read-only tools (`python3 evals/trigger/trigger_check.py evals/trigger/queries.json <sample-repo> out.json 3`). The current description scores 20/20 on every run.
+
 ## License
 
 [MIT](LICENSE)

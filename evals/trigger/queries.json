@@ -1,0 +1,22 @@
+[
+  {"query": "배포 전에 orders-api 한번 빠르게 훑어줘. 운영에선 api 2개 띄울 건데 큰 문제만 알려주면 돼", "should_trigger": true},
+  {"query": "~/work/payment-worker 레포에서 워커 재시작하면 처리 중이던 결제 job이 날아가는지 확인 좀 해줘. 큐는 redis list 쓰고 있어", "should_trigger": true},
+  {"query": "can you QA the feat/checkout-v2 branch before I merge? it touches the order service and the stock reservation code", "should_trigger": true},
+  {"query": "이 서비스 k8s에 replicas 3으로 올릴 건데 멀티 인스턴스에서 문제 생길 만한 거 실제로 띄워서 테스트해줘", "should_trigger": true},
+  {"query": "is this ready to deploy? docker compose up works on my laptop but I'm nervous about what happens during a rolling update", "should_trigger": true},
+  {"query": "최대한 자세하게 테스트해줘. notification-service인데 kafka consumer랑 postgres 써. 장애 상황까지 전부", "should_trigger": true},
+  {"query": "smoke test http://localhost:3000 real quick and tell me if anything major is broken, the app is in ./web", "should_trigger": true},
+  {"query": "we had duplicate charges in prod last week when the db failed over. can you reproduce what happens to in-flight payments when postgres restarts? repo is ./billing", "should_trigger": true},
+  {"query": "apps/inventory QA 돌리고 찾은 버그 고쳐줘. 커밋은 하지 말고", "should_trigger": true},
+  {"query": "does my webhook handler survive redelivery? stripe sometimes sends the same event twice. handler is src/webhooks/stripe.ts and we run 2 pods", "should_trigger": true},
+  {"query": "write unit tests for the parse_order function in app/api.py, cover the edge cases for qty", "should_trigger": false},
+  {"query": "pytest가 tests/test_checkout.py에서 계속 실패하는데 원인 좀 찾아줘. 어제까진 됐었음", "should_trigger": false},
+  {"query": "review this PR diff for naming and code style only, no need to run anything: gh pr diff 482", "should_trigger": false},
+  {"query": "deploy/k8s.yaml에 readinessProbe랑 PodDisruptionBudget 추가해줘", "should_trigger": false},
+  {"query": "set up a GitHub Actions workflow that runs our pytest suite and ruff on every push to main", "should_trigger": false},
+  {"query": "k6 부하 테스트 결과 json이 results/ 폴더에 있는데 그래프로 정리해줘", "should_trigger": false},
+  {"query": "explain how redis BLMOVE works and when I'd pick it over BRPOP for a job queue", "should_trigger": false},
+  {"query": "our checkout button overlaps the footer on mobile safari, fix the css in web/src/Checkout.css", "should_trigger": false},
+  {"query": "terraform plan 출력 붙여줄 테니 위험한 변경 있는지 봐줘 (destroy나 replace 위주로)", "should_trigger": false},
+  {"query": "write a chaos engineering runbook for our on-call team as a markdown doc, we'll run the experiments later ourselves", "should_trigger": false}
+]
