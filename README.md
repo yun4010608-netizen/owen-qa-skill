@@ -1,4 +1,4 @@
-# ops-qa
+# owen-qa-skill
 
 [한국어](README.ko.md)
 
@@ -22,8 +22,8 @@ Most QA clicks through the happy path on a single instance. The bugs that reach 
 As a plugin:
 
 ```
-/plugin marketplace add yun4010608-netizen/ops-qa
-/plugin install ops-qa@ops-qa
+/plugin marketplace add yun4010608-netizen/owen-qa-skill
+/plugin install owen-qa-skill@owen-qa-skill
 ```
 
 Or copy `skills/qa` to `~/.claude/skills/qa` (all projects) or `.claude/skills/qa` (one project).
@@ -47,7 +47,7 @@ Or copy `skills/qa` to `~/.claude/skills/qa` (all projects) or `.claude/skills/q
 
 Each depth spends its budget on the most valuable checks first and lists what it did not get to. Plain requests work too: "quick sanity check before I deploy" runs `quick`, "test this as thoroughly as you can" runs `deep`.
 
-Installed as a plugin, the command is `/ops-qa:qa`. Claude also uses the skill when you ask things like "is this ready to deploy?" or "can a worker restart lose jobs?".
+Installed as a plugin, the command is `/owen-qa-skill:qa`. Claude also uses the skill when you ask things like "is this ready to deploy?" or "can a worker restart lose jobs?".
 
 ## Safety
 
@@ -66,7 +66,7 @@ Installed as a plugin, the command is `/ops-qa:qa`. Claude also uses the skill w
 
 ## Evals
 
-`evals/fixtures/orders-service` is a small order service with nine known bugs, and `evals/evals.json` holds the prompts and the answer key. Use them to check that a change to the skill still finds what it should.
+`evals/fixtures/orders-service` is a small order service with nine known bugs. It is deliberately broken and insecure (security scanners will flag it), so never deploy it. `evals/evals.json` holds the prompts and the answer key. Use them to check that a change to the skill still finds what it should.
 
 `evals/trigger/` checks when Claude loads the skill: 10 requests that should trigger it and 10 near-misses that should not, run against the installed skill with read-only tools (`python3 evals/trigger/trigger_check.py evals/trigger/queries.json <sample-repo> out.json 3`). The current description scores 20/20 on every run.
 

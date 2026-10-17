@@ -1,4 +1,4 @@
-# ops-qa
+# owen-qa-skill
 
 [English](README.md)
 
@@ -31,8 +31,8 @@
 플러그인으로:
 
 ```
-/plugin marketplace add yun4010608-netizen/ops-qa
-/plugin install ops-qa@ops-qa
+/plugin marketplace add yun4010608-netizen/owen-qa-skill
+/plugin install owen-qa-skill@owen-qa-skill
 ```
 
 또는 `skills/qa`를 `~/.claude/skills/qa`(모든 프로젝트)나 `.claude/skills/qa`(한 프로젝트)에 복사합니다.
@@ -56,7 +56,7 @@
 
 깊이마다 가장 중요한 점검부터 하고, 시간이 모자라 못 한 것은 목록으로 남깁니다. "배포 전에 빠르게 봐줘"라고 하면 `quick`, "최대한 자세하게 봐줘"라고 하면 `deep`으로 돕니다.
 
-플러그인으로 설치하면 명령은 `/ops-qa:qa`입니다. "이거 배포해도 돼?", "워커 재시작하면 작업 날아가?" 같은 질문에도 Claude가 이 스킬을 씁니다.
+플러그인으로 설치하면 명령은 `/owen-qa-skill:qa`입니다. "이거 배포해도 돼?", "워커 재시작하면 작업 날아가?" 같은 질문에도 Claude가 이 스킬을 씁니다.
 
 ## 안전장치
 
@@ -77,7 +77,7 @@
 
 ## 평가
 
-`evals/fixtures/orders-service`는 알려진 버그 9개를 넣어 둔 작은 주문 서비스입니다. `evals/evals.json`에 테스트 프롬프트와 정답이 있습니다. 스킬을 고친 뒤에도 찾아야 할 문제를 여전히 찾는지 확인할 때 씁니다.
+`evals/fixtures/orders-service`는 알려진 버그 9개를 넣어 둔 작은 주문 서비스입니다. 일부러 망가뜨리고 보안 설정도 빼 둔 코드라 보안 스캐너가 경고를 냅니다. 배포하지 마세요. `evals/evals.json`에 테스트 프롬프트와 정답이 있습니다. 스킬을 고친 뒤에도 찾아야 할 문제를 여전히 찾는지 확인할 때 씁니다.
 
 `evals/trigger/`는 Claude가 언제 이 스킬을 부르는지 확인합니다. 불러야 하는 요청 10개와 비슷하지만 부르면 안 되는 요청 10개를, 설치된 스킬에 읽기 전용 도구만 허용해서 돌립니다(`python3 evals/trigger/trigger_check.py evals/trigger/queries.json <샘플 저장소> out.json 3`). 지금 description은 매번 20/20입니다.
 

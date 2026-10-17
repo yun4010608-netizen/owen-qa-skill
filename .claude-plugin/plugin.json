@@ -1,5 +1,5 @@
 {
-  "name": "ops-qa",
+  "name": "owen-qa-skill",
   "version": "0.1.0",
   "description": "QA that runs your app like production: several instances, real dependencies, and restarts, crashes, and outages while work is in flight. Evidence-backed reports; fixes only when asked.",
   "author": {
