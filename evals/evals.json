@@ -37,6 +37,24 @@
       "severity": "Medium",
       "where": "app/api.py do_POST",
       "what": "Non-numeric qty or missing fields return 500 with a Python traceback in the body; negative and zero qty are accepted with 201."
+    },
+    {
+      "id": "stock-lock-ttl",
+      "severity": "Critical",
+      "where": "app/worker.py reserve_stock",
+      "what": "The stock lock's TTL (STOCK_LOCK_TTL=2s) is shorter than the work it protects (WORK_SECONDS=3s), the stock update is read-modify-write, and the lock is released with a plain DEL that can remove another worker's lock. With 2 workers, 10 done orders for one item took stock from 100 to 95 instead of 90 (oversell)."
+    },
+    {
+      "id": "duplicate-emails",
+      "severity": "High",
+      "where": "app/api.py notifier thread",
+      "what": "Every API replica runs its own notifier thread with check-then-act on 'notified', so with 2 API replicas every done order got emails=2. With 1 replica it is 1."
+    },
+    {
+      "id": "k8s-config",
+      "severity": "Medium",
+      "where": "deploy/k8s.yaml",
+      "what": "Worker terminationGracePeriodSeconds 2 is shorter than a 3 s job; api has no readinessProbe; redis uses emptyDir, so a pod restart loses all orders."
     }
   ],
   "evals": [
@@ -78,6 +96,14 @@
           "text": "Reports 500 with traceback for bad input, or negative qty accepted"
         },
         {
+          "id": "finds-oversell",
+          "text": "Reports stock going down by less than the number of completed orders for the same item, with measured numbers"
+        },
+        {
+          "id": "finds-duplicate-emails",
+          "text": "Reports more than one confirmation email per order with 2+ API replicas"
+        },
+        {
           "id": "evidence",
           "text": "Every finding includes the command run and the observed output"
         },
@@ -91,7 +117,7 @@
         },
         {
           "id": "cleanup",
-          "text": "No containers, networks, or volumes from the run are left"
+          "text": "No containers, networks, or volumes from the run are left, and no pre-existing image or volume was removed"
         }
       ]
     },
@@ -118,7 +144,7 @@
         },
         {
           "id": "cleanup",
-          "text": "No containers, networks, or volumes from the run are left"
+          "text": "No containers, networks, or volumes from the run are left, and no pre-existing image or volume was removed"
         }
       ]
     },
@@ -141,7 +167,7 @@
         },
         {
           "id": "tests-first",
-          "text": "Each fix comes with a test or probe that failed before the fix and passes after"
+          "text": "Leaves automated regression tests in the repository that fail on the original code and pass after the fix"
         },
         {
           "id": "reprobe",
@@ -154,6 +180,96 @@
         {
           "id": "report-updated",
           "text": "The report marks each finding Fixed or Not fixed with a reason"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "quick-korean",
+      "prompt": "<fixture-copy> 배포 전에 빠르게 최소한으로만 QA 해줘. 큰 문제만 알려주면 돼.",
+      "expected_output": "A short Korean report within about 10 minutes: a verdict, the top few findings with one repro command each, and what was not checked.",
+      "files": [
+        "evals/fixtures/orders-service"
+      ],
+      "assertions": [
+        {
+          "id": "fast",
+          "text": "The run finished within 15 minutes of wall-clock time"
+        },
+        {
+          "id": "short",
+          "text": "The report is at most about 60 lines and puts the verdict first"
+        },
+        {
+          "id": "top-risk",
+          "text": "Finds at least one Critical or High multi-instance problem (idempotency duplicates, lost job, oversell, or duplicate emails) with a repro command"
+        },
+        {
+          "id": "not-checked",
+          "text": "Lists what was not checked"
+        },
+        {
+          "id": "cleanup",
+          "text": "No containers, networks, or volumes from the run are left, and no pre-existing image or volume was removed"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "deep-korean",
+      "prompt": "<fixture-copy> 최대한 자세하게 QA 해줘. 시간 오래 걸려도 괜찮아.",
+      "expected_output": "A full Korean report covering all nine known bugs, the Kubernetes manifest review, invariants, coverage, an evidence appendix, residual risks, and cleanup.",
+      "files": [
+        "evals/fixtures/orders-service"
+      ],
+      "assertions": [
+        {
+          "id": "finds-idempotency",
+          "text": "Reports duplicate orders for one Idempotency-Key across instances, with the measured duplicate count"
+        },
+        {
+          "id": "finds-lost-job",
+          "text": "Reports an order stuck in 'processing' after a worker restart or kill"
+        },
+        {
+          "id": "finds-worker-outage-crash",
+          "text": "Reports that workers exit and stay down after a Redis outage"
+        },
+        {
+          "id": "finds-sigterm",
+          "text": "Reports slow or ungraceful shutdown (SIGTERM ignored, SIGKILL after grace period)"
+        },
+        {
+          "id": "finds-health",
+          "text": "Reports /health returning 200 while Redis is down"
+        },
+        {
+          "id": "finds-validation",
+          "text": "Reports 500 with traceback for bad input, or negative qty accepted"
+        },
+        {
+          "id": "finds-oversell",
+          "text": "Reports stock going down by less than the number of completed orders for the same item, with measured numbers"
+        },
+        {
+          "id": "finds-duplicate-emails",
+          "text": "Reports more than one confirmation email per order with 2+ API replicas"
+        },
+        {
+          "id": "finds-k8s",
+          "text": "Reviews deploy/k8s.yaml and reports at least two of: worker grace period shorter than the job, no readinessProbe, redis on emptyDir"
+        },
+        {
+          "id": "evidence",
+          "text": "Every finding includes the command run and the observed output"
+        },
+        {
+          "id": "deep-sections",
+          "text": "Includes coverage, evidence appendix (or equivalent), and residual risks"
+        },
+        {
+          "id": "cleanup",
+          "text": "No containers, networks, or volumes from the run are left, and no pre-existing image or volume was removed"
         }
       ]
     }

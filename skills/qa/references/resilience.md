@@ -13,12 +13,14 @@ How to run the target with several instances, how to inject each fault, and what
 
 ### Docker Compose
 
-- Scale: `docker compose up -d --build --scale api=2 --scale worker=2`.
+- Use your own project name so you never touch the user's running stack: `P=qa-<target>-$RANDOM; docker compose -p "$P" up -d --build --scale api=2 --scale worker=2`. Pass `-p "$P"` to every later `docker compose` command.
+- If the user's own stack is running from the same compose file, check for host port clashes first and move your ports with an override file rather than stopping theirs.
 - A service with a fixed host port (`"8080:8080"`) cannot run twice. Either use a port range (`"127.0.0.1:8080-8081:8080"`) so each replica gets its own port, or reach the replicas from inside the compose network. If the project's compose file blocks scaling, record it as a finding and work around it in a copy, not in the original file (`docker compose -f compose.yaml -f "$QA_DIR/override.yaml"`).
 - List replicas: `docker compose ps --format '{{.Name}}' api`.
 - Run tools inside the network, where the service name resolves to all replicas: `docker run --rm --network <project>_default -v <skill-dir>/scripts:/qa:ro python:3.13-slim python3 /qa/load.py --target http://api:8080 ...`.
 - Bind ports to `127.0.0.1` so databases and dashboards started for QA are not reachable from the local network.
-- Clean up: `docker compose down -v --remove-orphans` (only for a project you started; `-v` deletes its volumes).
+- Clean up: `docker compose -p "$P" down -v --remove-orphans --rmi local`. Use it only on your own project: `-v` deletes the project's volumes, and `--rmi local` removes only the images this project built, not pulled base images.
+- Recreating a container can leave its old anonymous volume behind. Remove a dangling volume only if it is not in `$QA_DIR/before.txt` and you can show it holds this run's data; otherwise list it. Do not `docker rmi` a base image, and do not run `docker system prune`, `docker volume prune`, or `docker image prune`: they delete other people's things.
 
 ### Kubernetes
 
@@ -97,6 +99,12 @@ Each scenario: start traffic or jobs, inject the fault, wait for recovery, stop 
 - List every time limit that applies to one unit of work: client timeout, load balancer idle timeout, server timeout, job maximum runtime, credential or token lifetime (cloud STS sessions default to one hour), lock and lease TTLs, queue visibility timeout, termination grace period.
 - Flag any limit that is shorter than the work it covers. Where config allows, shorten the limit to make it testable (for example a 60-second token with a 90-second job) and confirm what breaks.
 - Typical bugs: long jobs fail when credentials expire mid-run; a lock expires while its holder is still working and a second worker starts.
+
+### Concurrent work on the same resource
+
+- Send several requests or jobs that touch the same thing (the same item's stock, account balance, document, or row) so that different workers or instances handle them at the same time. Then check the resource's final value against the sum of the completed work.
+- Pass: the final value matches exactly; no update is lost.
+- Typical bugs: read-modify-write without a transaction or atomic operation; a lock whose TTL is shorter than the work it protects, so a second holder gets in; a lock released with a plain `DEL` that can remove another holder's lock.
 
 ### Duplicate message delivery
 

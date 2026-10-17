@@ -24,6 +24,7 @@ services:
     environment:
       REDIS_HOST: redis
       WORK_SECONDS: "3"
+      STOCK_LOCK_TTL: "2"
     depends_on:
       redis:
         condition: service_healthy

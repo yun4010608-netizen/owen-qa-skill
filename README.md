@@ -31,18 +31,28 @@ Or copy `skills/qa` to `~/.claude/skills/qa` (all projects) or `.claude/skills/q
 ## Usage
 
 ```
-/qa                      # standard depth, report only, current repo or branch diff
-/qa quick                # smoke test plus one rolling restart under load
-/qa deep                 # full resilience matrix
-/qa fix                  # report, then fix with a reproducing test per finding
+/qa quick                # about 10 minutes: the biggest risks, short answer
+/qa                      # standard, about 30 to 45 minutes: full report
+/qa deep                 # no time limit: every scenario, evidence appendix, residual risks
+/qa fix                  # report, then fix with a regression test per finding
 /qa http://localhost:8080
 ```
+
+| Depth | Time | What runs | Report |
+|---|---|---|---|
+| `quick` | about 10 min | main flow, static multi-instance scan, up to 3 resilience probes picked by risk | verdict, top findings, what was not checked |
+| `standard` | 30 to 45 min | all changed or critical surfaces, core resilience scenarios, config review | full report with invariants and coverage |
+| `deep` | no limit | every surface and dependency, full fault matrix, sustained load, repeated probes | full report plus evidence appendix, residual risks, fix plan |
+
+Plain requests work too: "quick sanity check before I deploy" runs `quick`, "test this as thoroughly as you can" runs `deep`.
 
 Installed as a plugin, the command is `/ops-qa:qa`. Claude also uses the skill when you ask things like "is this ready to deploy?" or "can a worker restart lose jobs?".
 
 ## Safety
 
+- Everything runs under its own Compose project or namespace, so your running stack is never scaled, restarted, or torn down.
 - Destructive steps (killing processes, stopping dependencies, injecting faults) run only on environments the skill created or that you call disposable. It asks before each destructive step on anything shared, and stays read-only on production unless you approve each step.
+- Cleanup removes only what the run created. It records existing containers, images, and volumes first and never prunes.
 - Secret values are kept out of reports and logs.
 - No telemetry. The skill makes no network calls of its own. The one bundled script, `scripts/load.py`, uses only the Python standard library and talks only to the targets you pass it.
 
@@ -55,7 +65,7 @@ Installed as a plugin, the command is `/ops-qa:qa`. Claude also uses the skill w
 
 ## Evals
 
-`evals/fixtures/orders-service` is a small order service with six known bugs, and `evals/evals.json` holds the prompts and the answer key. Use them to check that a change to the skill still finds what it should.
+`evals/fixtures/orders-service` is a small order service with nine known bugs, and `evals/evals.json` holds the prompts and the answer key. Use them to check that a change to the skill still finds what it should.
 
 ## License
 
