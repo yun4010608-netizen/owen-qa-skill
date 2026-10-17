@@ -32,8 +32,9 @@ Or copy `skills/qa` to `~/.claude/skills/qa` (all projects) or `.claude/skills/q
 
 ```
 /qa quick                # about 10 minutes: the biggest risks, short answer
-/qa                      # standard, about 30 to 45 minutes: full report
-/qa deep                 # no time limit: every scenario, evidence appendix, residual risks
+/qa                      # standard, about 30 minutes: full report
+/qa deep                 # about 60 minutes: every scenario, evidence appendix, residual risks
+/qa deep 2h              # set your own time budget (or "no time limit")
 /qa fix                  # report, then fix with a regression test per finding
 /qa http://localhost:8080
 ```
@@ -41,10 +42,10 @@ Or copy `skills/qa` to `~/.claude/skills/qa` (all projects) or `.claude/skills/q
 | Depth | Time | What runs | Report |
 |---|---|---|---|
 | `quick` | about 10 min | main flow, static multi-instance scan, up to 3 resilience probes picked by risk | verdict, top findings, what was not checked |
-| `standard` | 30 to 45 min | all changed or critical surfaces, core resilience scenarios, config review | full report with invariants and coverage |
-| `deep` | no limit | every surface and dependency, full fault matrix, sustained load, repeated probes | full report plus evidence appendix, residual risks, fix plan |
+| `standard` | about 30 min | all changed or critical surfaces, core resilience scenarios, config review | full report with invariants and coverage |
+| `deep` | about 60 min | every surface and dependency, full fault matrix, sustained load, repeated probes | full report plus evidence appendix, residual risks, fix plan |
 
-Plain requests work too: "quick sanity check before I deploy" runs `quick`, "test this as thoroughly as you can" runs `deep`.
+Each depth spends its budget on the most valuable checks first and lists what it did not get to. Plain requests work too: "quick sanity check before I deploy" runs `quick`, "test this as thoroughly as you can" runs `deep`.
 
 Installed as a plugin, the command is `/ops-qa:qa`. Claude also uses the skill when you ask things like "is this ready to deploy?" or "can a worker restart lose jobs?".
 
@@ -54,7 +55,7 @@ Installed as a plugin, the command is `/ops-qa:qa`. Claude also uses the skill w
 - Destructive steps (killing processes, stopping dependencies, injecting faults) run only on environments the skill created or that you call disposable. It asks before each destructive step on anything shared, and stays read-only on production unless you approve each step.
 - Cleanup removes only what the run created. It records existing containers, images, and volumes first and never prunes.
 - Secret values are kept out of reports and logs.
-- No telemetry. The skill makes no network calls of its own. The one bundled script, `scripts/load.py`, uses only the Python standard library and talks only to the targets you pass it.
+- No telemetry. The skill makes no network calls of its own. The bundled scripts are `scripts/load.py` (Python standard library only; talks only to the targets you pass it) and `scripts/snapshot.sh` (lists local Docker and Kubernetes resources before and after a run).
 
 ## Requirements
 

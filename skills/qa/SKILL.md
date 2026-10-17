@@ -22,7 +22,7 @@ Pick the depth from the user's words first, then from arguments, then the defaul
 | | quick | standard | deep |
 |---|---|---|---|
 | Goal | the biggest risks, answered fast | a solid pass before a release | everything that can reasonably be tested |
-| Time budget | about 10 minutes | about 30 to 45 minutes | no limit; post a one-line progress note after each step |
+| Time budget | about 10 minutes | about 30 minutes | about 60 minutes; post a one-line progress note after each step |
 | 1. Scope | README, run config, the main code path | all surfaces, state, and time limits | the same, plus deployment manifests and a full list of time limits |
 | 3. Baseline | build; existing tests only if they finish in about 2 minutes | build, tests, linters | the same, run twice to catch flaky tests |
 | 4. Functional | the one or two critical flows | checklists for each changed or critical surface | full checklists for every surface, including auth and input sweeps |
@@ -38,7 +38,9 @@ Quick depth picks its probes by risk, most likely to find something serious firs
 2. If there is a queue or a background worker: kill a worker mid-job and check that the job is not lost.
 3. Otherwise, or if the budget allows: a rolling restart under load.
 
-Keep quick quick. Record the start time (`date +%s`) and check it before each new probe. When the budget is spent, stop and report, and list what you did not check. If you think a deeper run is needed, say so in the report and offer it rather than doing it.
+**Time budget.** The user can set one in words or as an argument (`/qa deep 30m`, "20분 안에") or lift it ("no time limit", "시간 제한 없이"); "taking a while is fine" means the full default budget, not unlimited. Check the elapsed time (`$QA_DIR/start`) before each new probe. Spend the budget on the most valuable work first, so that what gets cut when time runs out is the least valuable: at deep depth, the last rows of the scenario table in step 5 go first. When the budget is spent, stop, report, and list what you did not check. Keep quick quick: if you think a deeper run is needed, say so and offer it rather than doing it.
+
+**Work efficiently.** Long runs cost most in tool calls and in output you read back. Batch related commands into one shell call. Write a probe or invariant script once when you will run it several times. Keep raw output in `$QA_DIR` files and read back only the lines that decide pass or fail. For control experiments (one setting changed), recreate just the affected service with an override (`docker compose up -d --no-deps --no-build --force-recreate <service>`) instead of rebuilding the stack.
 
 **Mode:** `report` (default) changes no code. `fix` fixes after reporting (step 8).
 
@@ -76,13 +78,10 @@ Then write a short test plan: surfaces, probes, invariants, and which steps are 
 
 ### 2. Bring it up like production
 
-Create a scratch directory, note the start time, and record what already exists so cleanup can tell your resources from everyone else's:
+Create a scratch directory and record the start time and what already exists, so cleanup can tell your resources from everyone else's:
 
 ```bash
-QA_DIR=$(mktemp -d -t qa-XXXXXX); date +%s > "$QA_DIR/start"
-{ docker ps -a --format '{{.Names}}'; docker images --format '{{.Repository}}:{{.Tag}} {{.ID}}'
-  docker volume ls -q; docker network ls --format '{{.Name}}'; } > "$QA_DIR/before.txt" 2>/dev/null
-kubectl get ns -o name >> "$QA_DIR/before.txt" 2>/dev/null   # if Kubernetes is involved
+QA_DIR=$(mktemp -d -t qa-XXXXXX); <skill-dir>/scripts/snapshot.sh before "$QA_DIR"
 ```
 
 Use the project's own tooling, under your own project name or namespace (ground rule 4), then scale every stateless service to at least two instances. Recipes for Docker Compose, Kubernetes, and bare processes are in [references/resilience.md](references/resilience.md) under "Environments".
@@ -129,7 +128,9 @@ python3 <skill-dir>/scripts/load.py \
 | Slow dependency or added latency | | | yes |
 | Sustained load for 10 minutes or more | | | yes |
 
-Skip a scenario only when it cannot apply (no queue means no duplicate delivery), and say why in the coverage table.
+Skip a scenario only when it cannot apply (no queue means no duplicate delivery) or the budget ran out, and say which in the coverage table.
+
+Run the sustained load last and in the background (`load.py ... &`), and do the config review (step 6) and draft the report while it runs. Do not inject other faults during it: it measures steady state (memory, latency drift, slow leaks).
 
 ### 6. Review the deployment config
 
@@ -193,9 +194,11 @@ What you created and removed, and anything left behind.
 
 Deep depth adds three sections after Coverage:
 
-- **Evidence appendix:** for each finding, the timeline of the probe that found it (fault injected at t+X, recovered at t+Y) and the raw output that proves it.
+- **Evidence appendix:** one entry per finding: the evidence file in `$QA_DIR`, the probe timeline (fault at t+X, recovered at t+Y), and the one or two output lines that prove it. Point to the files rather than pasting them, and do not repeat what the finding already says.
 - **Residual risks:** what could still fail that this run could not test, and why (no production-like data, no second region, no access to the real provider).
 - **Fix plan:** the findings grouped into changes, in the order you would make them, with the design decisions each one needs.
+
+Keep the report as long as the findings need and no longer: roughly 150 to 250 lines at standard and 200 to 350 at deep. Group findings that share one cause and one fix into a single entry, and keep raw output in `$QA_DIR`.
 
 Sort findings by severity, then by how likely users are to hit them:
 
@@ -217,4 +220,4 @@ Only when the user asked for fixes.
 
 ### 9. Clean up
 
-Stop background load, restart anything you stopped, and restore replica counts and config. Remove your Compose project (`docker compose -p <your-project> down -v --remove-orphans --rmi local`) or namespace, the test data you created, and temporary files that hold credentials. Then compare against `$QA_DIR/before.txt`: anything new that you can tie to this run can go; anything listed there stays, even if it looks unused. List anything you could not restore or could not attribute under "Cleanup" in the report.
+Stop background load, restart anything you stopped, and restore replica counts and config. Remove your Compose project (`docker compose -p <your-project> down -v --remove-orphans --rmi local`) or namespace, the test data you created, and temporary files that hold credentials. Then run `<skill-dir>/scripts/snapshot.sh diff "$QA_DIR"`: anything new that you can tie to this run can go; anything that was there before stays, even if it looks unused. List anything you could not restore or could not attribute under "Cleanup" in the report.
