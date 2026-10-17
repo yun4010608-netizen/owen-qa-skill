@@ -8,6 +8,9 @@
 # "New" resources are candidates for cleanup only if you can tie them to this run
 # (your compose project label, your namespace, a creation time inside the run plus matching data).
 # "Gone" resources should be empty for this run; other sessions on the machine can also cause changes.
+#
+# Kubernetes namespaces are included only when QA_KUBE_CONTEXT names the context you test in,
+# so the script never queries whatever cluster the current kubeconfig context happens to point at.
 set -u
 cmd=${1:?usage: snapshot.sh before|diff <qa-dir>}
 dir=${2:?usage: snapshot.sh before|diff <qa-dir>}
@@ -18,8 +21,8 @@ take() {
     docker images --format 'image {{.Repository}}:{{.Tag}} {{.ID}}'
     docker volume ls --format 'volume {{.Name}}'
     docker network ls --format 'network {{.Name}}'
-    if command -v kubectl >/dev/null 2>&1; then
-      kubectl get ns -o name --request-timeout=5s 2>/dev/null | sed 's/^/k8s /'
+    if [ -n "${QA_KUBE_CONTEXT:-}" ] && command -v kubectl >/dev/null 2>&1; then
+      kubectl --context "$QA_KUBE_CONTEXT" get ns -o name --request-timeout=5s 2>/dev/null | sed 's/^/k8s /'
     fi
   } 2>/dev/null | sort
 }

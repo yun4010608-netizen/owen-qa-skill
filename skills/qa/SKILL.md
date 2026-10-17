@@ -84,6 +84,8 @@ Create a scratch directory and record the start time and what already exists, so
 QA_DIR=$(mktemp -d -t qa-XXXXXX); <skill-dir>/scripts/snapshot.sh before "$QA_DIR"
 ```
 
+If the run deploys to Kubernetes, export `QA_KUBE_CONTEXT=<the context you test in>` first so the snapshot covers namespaces there. Without it the script leaves Kubernetes alone, which keeps it from querying whatever cluster the current context points at.
+
 Use the project's own tooling, under your own project name or namespace (ground rule 4), then scale every stateless service to at least two instances. Recipes for Docker Compose, Kubernetes, and bare processes are in [references/resilience.md](references/resilience.md) under "Environments".
 
 If all you have is a deployed URL (no code, or no way to run it yourself), treat the environment as shared: run the functional probes black-box, and run resilience probes only with the user's go-ahead for each one.
