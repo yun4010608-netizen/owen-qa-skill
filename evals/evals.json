@@ -1,0 +1,60 @@
+{
+  "skill_name": "qa",
+  "fixture_note": "Copy evals/fixtures/orders-service to a fresh temp directory before each run and point the prompt at the copy. Runs bind 127.0.0.1:8080-8081, so run them one at a time.",
+  "known_bugs": [
+    {"id": "idempotency-in-memory", "severity": "Critical", "where": "app/api.py idempotency_keys", "what": "Idempotency keys live in process memory, and the check-then-set is not atomic. The same key sent to two instances, or concurrently to one, creates several orders. Verified: 20 identical requests across 2 instances created 7 orders."},
+    {"id": "job-lost-on-worker-restart", "severity": "High", "where": "app/worker.py brpop before work", "what": "The worker removes the job from the queue before doing the work. Killing or restarting a worker mid-job leaves the order in 'processing' forever. Verified with docker restart of one worker while 10 orders were queued."},
+    {"id": "worker-dies-on-redis-outage", "severity": "High", "where": "app/worker.py main loop, compose.yaml", "what": "A Redis outage raises ConnectionError, the worker exits with code 1, and there is no restart policy, so all workers stay down after Redis comes back. Orders pile up in 'queued'."},
+    {"id": "sigterm-ignored", "severity": "Medium", "where": "api.py and worker.py run as PID 1 without a SIGTERM handler", "what": "Stopping a container waits the full grace period and then SIGKILLs it, cutting in-flight requests and jobs. Verified: docker restart took 10s and the client saw connection resets."},
+    {"id": "health-ignores-redis", "severity": "Medium", "where": "app/api.py /health", "what": "/health returns 200 while Redis is down and POST /orders returns 500."},
+    {"id": "input-validation", "severity": "Medium", "where": "app/api.py do_POST", "what": "Non-numeric qty or missing fields return 500 with a Python traceback in the body; negative and zero qty are accepted with 201."}
+  ],
+  "evals": [
+    {
+      "id": 1,
+      "name": "full-report-korean",
+      "prompt": "<fixture-copy> 에 있는 주문 서비스 QA 해줘. 운영에서는 api랑 worker 둘 다 여러 개 띄울 예정이야.",
+      "expected_output": "A report in Korean with a verdict of Do not ship, findings for all six known bugs with repro commands and observed output, a coverage table, and a cleanup section. No source changes. No containers left running.",
+      "files": ["evals/fixtures/orders-service"],
+      "assertions": [
+        {"id": "multi-instance", "text": "Ran at least 2 api and 2 worker instances during testing"},
+        {"id": "finds-idempotency", "text": "Reports duplicate orders for one Idempotency-Key across instances, with the measured duplicate count"},
+        {"id": "finds-lost-job", "text": "Reports an order stuck in 'processing' after a worker restart or kill"},
+        {"id": "finds-worker-outage-crash", "text": "Reports that workers exit and stay down after a Redis outage"},
+        {"id": "finds-sigterm", "text": "Reports slow or ungraceful shutdown (SIGTERM ignored, SIGKILL after grace period)"},
+        {"id": "finds-health", "text": "Reports /health returning 200 while Redis is down"},
+        {"id": "finds-validation", "text": "Reports 500 with traceback for bad input, or negative qty accepted"},
+        {"id": "evidence", "text": "Every finding includes the command run and the observed output"},
+        {"id": "language", "text": "The report is written in Korean"},
+        {"id": "no-code-changes", "text": "No files in the fixture copy were modified"},
+        {"id": "cleanup", "text": "No containers, networks, or volumes from the run are left"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "restart-and-outage-focus",
+      "prompt": "Before we deploy <fixture-copy>, check whether restarting a worker or a short Redis blip can lose orders or process them twice. Quick check is fine.",
+      "expected_output": "A quick-depth report focused on the lost job, the worker crash on Redis outage, and duplicate processing, with evidence and cleanup.",
+      "files": ["evals/fixtures/orders-service"],
+      "assertions": [
+        {"id": "finds-lost-job", "text": "Reports an order stuck in 'processing' after a worker restart or kill"},
+        {"id": "finds-worker-outage-crash", "text": "Reports that workers exit and stay down after a Redis outage"},
+        {"id": "invariant-check", "text": "Compares accepted orders with final order states in Redis"},
+        {"id": "cleanup", "text": "No containers, networks, or volumes from the run are left"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "fix-mode-no-commit",
+      "prompt": "/qa fix <fixture-copy> - fix what you find, but don't commit.",
+      "expected_output": "The report, then fixes for the findings with a reproducing test per fix, design-level choices (distributed idempotency store, reliable queue) presented as options or implemented with stated tradeoffs, changes left uncommitted, and the report updated with Fixed or Not fixed per finding.",
+      "files": ["evals/fixtures/orders-service"],
+      "assertions": [
+        {"id": "tests-first", "text": "Each fix comes with a test or probe that failed before the fix and passes after"},
+        {"id": "reprobe", "text": "Reran the resilience probe that found each fixed bug"},
+        {"id": "no-commit", "text": "Made no git commits"},
+        {"id": "report-updated", "text": "The report marks each finding Fixed or Not fixed with a reason"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "ops-qa",
+  "description": "Production-realistic QA skills for Claude Code",
+  "owner": {
+    "name": "owen"
+  },
+  "plugins": [
+    {
+      "name": "ops-qa",
+      "description": "QA that runs your app like production: several instances, real dependencies, and restarts, crashes, and outages while work is in flight.",
+      "source": "./",
+      "category": "testing"
+    }
+  ]
+}
